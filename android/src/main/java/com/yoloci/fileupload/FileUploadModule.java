@@ -1,6 +1,9 @@
 package com.yoloci.fileupload;
 
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReadableArray;
@@ -52,8 +55,6 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
         ReadableArray files = options.getArray("files");
         ReadableMap fields = options.getMap("fields");
 
-
-
         HttpURLConnection connection = null;
         DataOutputStream outputStream = null;
         DataInputStream inputStream = null;
@@ -67,7 +68,6 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
         try {
 
             connectURL = new URL(uploadUrl);
-
 
             connection = (HttpURLConnection) connectURL.openConnection();
 
@@ -84,8 +84,6 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
                 String key = iterator.nextKey();
                 connection.setRequestProperty(key, headers.getString(key));
             }
-
-
 
             connection.setRequestProperty("Connection", "Keep-Alive");
             connection.setRequestProperty("Content-Type", "multipart/form-data;boundary="+boundary);
@@ -107,13 +105,13 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
             for (int i = 0; i < files.size(); i++) {
 
                 ReadableMap file = files.getMap(i);
+                String name = file.getString("name");
                 String filename = file.getString("filename");
-                String filepath = file.getString("filepath");
-                filepath = filepath.replace("file://", "");
+                String filepath = getRealFilePath(file.getString("filepath"));
                 fileInputStream = new FileInputStream(filepath);
 
                 outputStream.writeBytes(twoHyphens + boundary + lineEnd);
-                outputStream.writeBytes("Content-Disposition: form-data; name=\"image\";filename=\"" + filename + "\"" + lineEnd);
+                outputStream.writeBytes("Content-Disposition: form-data; name=\"" + (name == null ? filename : name) + "\";filename=\"" + filename + "\"" + lineEnd);
                 outputStream.writeBytes(lineEnd);
 
                 bytesAvailable = fileInputStream.available();
@@ -172,5 +170,27 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
         } catch(Exception ex) {
             callback.invoke("Error happened: " + ex.getMessage(), null);
         }
+    }
+
+    private String getRealFilePath(String filePath) {
+        filePath = filePath.replace("file://", "");
+        if (filePath.startsWith("content")) {
+            Uri contentUri = Uri.parse(filePath);
+
+            String[] projection = {MediaStore.Images.Media.DATA};
+            Cursor cursor = getReactApplicationContext().getContentResolver().query(
+                    contentUri,
+                    projection,
+                    null,
+                    null,
+                    null
+            );
+
+            int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+            cursor.moveToFirst();
+
+            filePath = cursor.getString(columnIndex);
+        }
+        return filePath;
     }
 }
