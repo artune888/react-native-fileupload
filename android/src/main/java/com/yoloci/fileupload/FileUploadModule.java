@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 
 import com.facebook.react.bridge.WritableMap;
 import java.io.FileInputStream;
+import java.nio.charset.Charset;
 
 import org.json.JSONObject;
 
@@ -93,12 +94,12 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
             // set fields
             ReadableMapKeySetIterator fieldIterator = fields.keySetIterator();
             while (fieldIterator.hasNextKey()) {
-                outputStream.writeBytes(twoHyphens + boundary + lineEnd);
+                outputStream.write(getBytes(twoHyphens + boundary + lineEnd));
 
                 String key = fieldIterator.nextKey();
-                outputStream.writeBytes("Content-Disposition: form-data; name=\"" + key +  "\"" + lineEnd + lineEnd);
-                outputStream.writeBytes(fields.getString(key));
-                outputStream.writeBytes(lineEnd);
+                outputStream.write(getBytes("Content-Disposition: form-data; name=\"" + key +  "\"" + lineEnd + lineEnd));
+                outputStream.write(getBytes(fields.getString(key)));
+                outputStream.write(getBytes(lineEnd));
             }
 
 
@@ -110,9 +111,10 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
                 String filepath = getRealFilePath(file.getString("filepath"));
                 fileInputStream = new FileInputStream(filepath);
 
-                outputStream.writeBytes(twoHyphens + boundary + lineEnd);
-                outputStream.writeBytes("Content-Disposition: form-data; name=\"" + (name == null ? filename : name) + "\";filename=\"" + filename + "\"" + lineEnd);
-                outputStream.writeBytes(lineEnd);
+                outputStream.write(getBytes(twoHyphens + boundary + lineEnd));
+                outputStream.write(getBytes("Content-Disposition: form-data; name=\"" + (name == null ? filename : name) + "\"; filename=\"" + filename + "\"" + lineEnd));
+                outputStream.write(getBytes("Content-Type: image/jepg" + lineEnd));
+                outputStream.write(getBytes(lineEnd));
 
                 bytesAvailable = fileInputStream.available();
                 bufferSize = Math.min(bytesAvailable, maxBufferSize);
@@ -128,10 +130,10 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
                     bytesRead = fileInputStream.read(buffer, 0, bufferSize);
                 }
 
-                outputStream.writeBytes(lineEnd);
+                outputStream.write(getBytes(lineEnd));
             }
 
-            outputStream.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+            outputStream.write(getBytes(twoHyphens + boundary + twoHyphens + lineEnd));
 
             // Responses from the server (code and message)
 
@@ -170,6 +172,10 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
         } catch(Exception ex) {
             callback.invoke("Error happened: " + ex.getMessage(), null);
         }
+    }
+
+    private byte[] getBytes(String content) {
+        return content.getBytes(Charset.forName("UTF-8"));
     }
 
     private String getRealFilePath(String filePath) {
