@@ -113,7 +113,7 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
 
                 outputStream.write(getBytes(twoHyphens + boundary + lineEnd));
                 outputStream.write(getBytes("Content-Disposition: form-data; name=\"" + (name == null ? filename : name) + "\"; filename=\"" + filename + "\"" + lineEnd));
-                outputStream.write(getBytes("Content-Type: image/jepg" + lineEnd));
+                outputStream.write(getBytes("Content-Type: application/octet-stream" + lineEnd));
                 outputStream.write(getBytes(lineEnd));
 
                 bytesAvailable = fileInputStream.available();
