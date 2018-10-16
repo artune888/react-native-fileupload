@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 
 import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.Dynamic;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableMapKeySetIterator;
@@ -98,7 +99,7 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
 
                 String key = fieldIterator.nextKey();
                 outputStream.write(getBytes("Content-Disposition: form-data; name=\"" + key +  "\"" + lineEnd + lineEnd));
-                outputStream.write(getBytes(fields.getString(key)));
+                outputStream.write(getBytes(fields.getDynamic(key)));
                 outputStream.write(getBytes(lineEnd));
             }
 
@@ -172,6 +173,32 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
         } catch(Exception ex) {
             callback.invoke("Error happened: " + ex.getMessage(), null);
         }
+    }
+
+    private byte[] getBytes(Dynamic value) {
+        String stringValue;
+        switch (value.getType().name()) {
+            case "String": {
+                stringValue = String.valueOf(value.asString());
+                break;
+            }
+            case "Boolean": {
+                stringValue = String.valueOf(value.asBoolean());
+                break;
+            }
+            case "Number": {
+                stringValue = String.valueOf(value.asInt());
+                break;
+            }
+            case "Null": {
+                stringValue = "null";
+                break;
+            }
+            default:
+                throw new RuntimeException("Unsupported type" + value.getType().name());
+        }
+
+        return getBytes(stringValue);
     }
 
     private byte[] getBytes(String content) {
