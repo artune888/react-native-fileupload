@@ -61,7 +61,6 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
         DataOutputStream outputStream = null;
         DataInputStream inputStream = null;
         URL connectURL = null;
-        FileInputStream fileInputStream = null;
 
         int bytesRead, bytesAvailable, bufferSize;
         byte[] buffer;
@@ -110,7 +109,7 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
                 String name = file.getString("name");
                 String filename = file.getString("filename");
                 String filepath = getRealFilePath(file.getString("filepath"));
-                fileInputStream = new FileInputStream(filepath);
+                FileInputStream fileInputStream = new FileInputStream(filepath);
 
                 outputStream.write(getBytes(twoHyphens + boundary + lineEnd));
                 outputStream.write(getBytes("Content-Disposition: form-data; name=\"" + (name == null ? filename : name) + "\"; filename=\"" + filename + "\"" + lineEnd));
@@ -131,6 +130,7 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
                     bytesRead = fileInputStream.read(buffer, 0, bufferSize);
                 }
 
+                fileInputStream.close();
                 outputStream.write(getBytes(lineEnd));
             }
 
@@ -141,7 +141,6 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
             int serverResponseCode = connection.getResponseCode();
             String serverResponseMessage = connection.getResponseMessage();
             if (serverResponseCode != 200) {
-                fileInputStream.close();
                 outputStream.flush();
                 outputStream.close();
                 callback.invoke("Error happened: " + serverResponseMessage, null);
@@ -162,7 +161,6 @@ public class FileUploadModule extends ReactContextBaseJavaModule {
                 Bundle bundle = bjc.convertToBundle(mainObject);
                 WritableMap map = Arguments.fromBundle(bundle);
 
-                fileInputStream.close();
                 outputStream.flush();
                 outputStream.close();
                 callback.invoke(null, map);
